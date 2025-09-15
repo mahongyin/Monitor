@@ -6,11 +6,9 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.maven.publish)
-    id("maven-publish")
-    id("signing")
+//    id("maven-publish")
+//    id("signing")
 }
-
-val signingKeyId = properties["signing.keyId"]?.toString()
 
 android {
     namespace = "github.leavesczy.monitor"
@@ -33,32 +31,45 @@ android {
 dependencies {
     compileOnly(libs.squareup.okHttp)
 }
-
-if (signingKeyId == null) {
+val VERSION_NAME = libs.versions.monitor.publishing.get()
+if (VERSION_NAME.contains("-LOCAL")) {
+    //task-> publishMavenPublicationToMavenRepository
     publishing {
         publications {
             create<MavenPublication>("release") {
+                groupId = "io.github.mahongyin.Monitor"
+                artifactId = "monitor-no-op"
+                version = VERSION_NAME
                 afterEvaluate {
                     from(components["release"])
                 }
             }
         }
+        // 没有这个，出的包会group空
+        group = "io.github.mahongyin.Monitor"
+        version = VERSION_NAME
+
+        repositories {
+            maven {
+                url = uri("../localmaven")
+            }
+        }
     }
 } else {
     mavenPublishing {
-        publishToMavenCentral()
-        signAllPublications()
+//        publishToMavenCentral()
+//        signAllPublications()
         configure(platform = AndroidSingleVariantLibrary())
         coordinates(
-            groupId = "io.github.leavesczy",
+            groupId = "io.github.mahongyin.Monitor",
             artifactId = "monitor-no-op",
-            version = libs.versions.monitor.publishing.get()
+            version = VERSION_NAME
         )
         pom {
             name = "Monitor"
             description = "An Http inspector for OkHttp & Retrofit"
             inceptionYear = "2025"
-            url = "https://github.com/leavesCZY/Monitor"
+            url = "https://github.com/mahongyin/Monitor"
             licenses {
                 license {
                     name = "The Apache License, Version 2.0"
@@ -68,15 +79,15 @@ if (signingKeyId == null) {
             }
             developers {
                 developer {
-                    id = "leavesCZY"
-                    name = "leavesCZY"
-                    url = "https://github.com/leavesCZY"
+                    id = "mahongyin"
+                    name = "mahongyin"
+                    url = "https://github.com/mahongyin"
                 }
             }
             scm {
-                url = "https://github.com/leavesCZY/Monitor"
-                connection = "scm:git:git://github.com/leavesCZY/Monitor.git"
-                developerConnection = "scm:git:ssh://git@github.com/leavesCZY/Monitor.git"
+                url = "https://github.com/mahongyin/Monitor"
+                connection = "scm:git:git://github.com/mahongyin/Monitor.git"
+                developerConnection = "scm:git:ssh://git@github.com/mahongyin/Monitor.git"
             }
         }
     }

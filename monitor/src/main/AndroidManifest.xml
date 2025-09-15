@@ -24,6 +24,10 @@
                 android:resource="@xml/monitor_file_provider_paths" />
         </provider>
 
+        <provider
+            android:name=".provider.MonitorProvider"
+            android:authorities="${applicationId}.monitor_provider"
+            android:exported="false" />
     </application>
 
 </manifest>

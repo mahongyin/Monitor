@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@android:color/white"
     android:gravity="center"
     android:orientation="vertical">
@@ -11,8 +12,13 @@
         android:id="@+id/btnNetworkRequest"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="20dp"
+        android:layout_margin="50dp"
         android:text="Network Request"
         tools:ignore="HardcodedText" />
+    <FrameLayout
+        android:id="@+id/web_main"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
 </LinearLayout>

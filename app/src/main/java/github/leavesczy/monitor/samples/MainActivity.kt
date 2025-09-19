@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Message
 import android.util.Log
+import android.view.ViewGroup
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -21,6 +22,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
-import github.leavesczy.monitor.MonitorInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
@@ -78,6 +79,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webview?.canGoBack() == true) {
+                    webview?.goBack()
+                    return
+                }
+                finish()
+            }
+        })
         setContent {
             MonitorSampleTheme {
                 Scaffold(
@@ -100,21 +110,23 @@ class MainActivity : AppCompatActivity() {
                             .padding(paddingValues = innerPadding),
                         contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 40.dp),
-                            onClick = {
-                                networkRequest()
-                                showToast(msg = "已发起请求，请查看消息通知栏")
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 40.dp),
+                                onClick = {
+                                    networkRequest()
+                                    showToast(msg = "已发起请求，请查看消息通知栏")
+                                }
+                            ) {
+                                Text(
+                                    modifier = Modifier,
+                                    text = "Network Request"
+                                )
                             }
-                        ) {
-                            Text(
-                                modifier = Modifier,
-                                text = "Network Request"
-                            )
+                            SimpleWebView()
                         }
-                        SimpleWebView()
                     }
                 }
             }
@@ -167,7 +179,11 @@ class MainActivity : AppCompatActivity() {
     fun SimpleWebView() {
         AndroidView(factory = { context ->
             webview(context).apply {
-                // 加载网页
+                // 设置布局参数
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT)
+                            // 加载网页
                 loadUrl("https://juejin.cn/")
             }
         }, update = { webView ->
@@ -175,8 +191,9 @@ class MainActivity : AppCompatActivity() {
             webView.reload()
         })
     }
-    private fun webview(context: Context):WebView {
-       val webview = WebView(context)
+
+    private fun webview(context: Context): WebView {
+        val webview = WebView(context)
         webview?.clearHistory()
         webview?.clearCache(true)
         webview?.clearFormData()

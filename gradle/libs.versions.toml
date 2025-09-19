@@ -20,7 +20,7 @@ junit = "4.13.2"
 squareup-okHttp = "5.1.0"
 squareup-retrofit = "3.0.0"
 
-monitor-remote = "1.8.4"
+monitor-remote = "1.8.4.2"
 monitor-publishing = "2.0.0" # -LOCAL -SNAPSHOT
 
 [plugins]

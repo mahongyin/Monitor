@@ -7,6 +7,7 @@ plugins {
 //    id("java-gradle-plugin")
     id 'com.vanniktech.maven.publish'
     id 'com.gradle.plugin-publish' version '2.0.0'
+    id 'maven-publish'
 }
 
 //java {
@@ -50,7 +51,7 @@ def VERSION_NAME = libs.versions.monitor.publishing.get()
 group = "io.github.mahongyin.Monitor"
 version = VERSION_NAME
 //强制要求 pluginId 和 groupId 相同。...
-// 发布到maven把下面注掉、发布gradle把下面解注
+//TODO 发布到maven把下面注掉、发布gradle把下面解注
 gradlePlugin {
     website = 'https://github.com/mahongyin/Monitor'
     vcsUrl = 'https://github.com/mahongyin/Monitor'
@@ -60,7 +61,7 @@ gradlePlugin {
             implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
             displayName = "MonitorPlugin"
             description = "Gradle plugin to Monitor Net!"
-            tags.set(['android', 'monitor', 'okhttp'])
+            tags.set(['android', 'monitor', 'okhttp', 'mahongyin'])
         }
         //... 还可以再加
     }
@@ -74,23 +75,41 @@ gradlePlugin {
 //            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
 //            displayName = "MonitorPlugin"
 //            description = "Gradle plugin to Monitor Net!"
-//            tags.set(listOf("android", "monitor", "okhttp"))
+//            tags.set(listOf("android", "monitor", "okhttp", "mahongyin"))
 //        }
+//          ... 还可以再加
 //        //register("xxxx") {}
 //    }
 //}
 // 注意 任务中publishPlugin 是发布到gradle门户 publishPluginMavenPublicationToMavenRepository
 if (VERSION_NAME.contains("-LOCAL")) {
-    //task-> publishMavenPublicationToMavenRepository
+    //gradle publishMavenPublicationToMavenRepository
     publishing {
-        //发布到本地仓库maven方式
-        repositories {
-            maven {
-                url = "../localmaven"
+        publications { PublicationContainer publication ->
+            maven(MavenPublication) {
+                version VERSION_NAME
+                artifactId 'monitor-plugin'
+                groupId 'io.github.mahongyin.'+rootProject.name
+                from components.java
+//            from components.release
+            }
+        }
+        repositories { RepositoryHandler handler ->
+            handler.maven { MavenArtifactRepository mavenArtifactRepository -> //正式仓库
+                //上传到项目本地仓库
+                url '..\\localmaven' //MAVEN_URL //
+                if (url.toString().startsWith("http")) {
+                    allowInsecureProtocol = true
+                    credentials {
+                        username = MAVEN_USER
+                        password = MAVEN_PASSWORD
+                    }
+                }
             }
         }
     }
-} else {// maven方式
+} else {
+// maven方式 gradle publishToMavenCentral
     mavenPublishing {
         // 配置坐标,参数一要和命名空间一致，参二为模块名(GroupId),参三为版本号 "1.0.0"
         coordinates(

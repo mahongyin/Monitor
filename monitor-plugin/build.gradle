@@ -2,12 +2,13 @@ plugins {
     //id 'java'
     id 'groovy'
     id 'kotlin'
-    //配置这个，gradlePlugin{}用否则找不到 org.gradle.api.Plugin 等
-    id("groovy-gradle-plugin")
 //    id("java-gradle-plugin")
     id 'com.vanniktech.maven.publish'
-    id 'com.gradle.plugin-publish' version '2.0.0'
     id 'maven-publish'
+    //配置这个，gradlePlugin{}用否则找不到 org.gradle.api.Plugin 等
+//    id("groovy-gradle-plugin")
+    // gradle门户
+    id 'com.gradle.plugin-publish' version '2.0.0'
 }
 
 //java {
@@ -32,9 +33,9 @@ dependencies {
 //    implementation gradleApi()
 //    implementation localGroovy()
 
-    // Java17+
-//    implementation 'com.android.tools.build:gradle:8.3.0' //考虑兼容Java11  AGP8 要Java17
-    compileOnly 'com.android.tools.build:gradle-api:8.3.0'
+    //AGP8 要Java17
+    compileOnly 'com.android.tools.build:gradle:8.3.0'
+//    compileOnly 'com.android.tools.build:gradle-api:8.3.0'
     //ASM
     implementation 'org.ow2.asm:asm:9.6'
     implementation 'org.ow2.asm:asm-util:9.6'
@@ -44,43 +45,56 @@ dependencies {
 //    implementation "commons-io:commons-io:2.13.0"
 
 }
+//  获取项目名
+def projectName = rootProject.name  //分享git是取的项目名
+def projectDirName = rootProject.projectDir.name//def projectName =rootProject.rootDir.name//项目文件夹名
+//  获取当前模块名
+def moduleName = project.name
+def moduleDirName = projectDir.name
+
+def gitRepo = "github.com/mahongyin"
+def groupName = "io.github.mahongyin.$projectName" //自行分辨 用项目名还是目录名
 
 def VERSION_NAME = libs.versions.monitor.publishing.get()
 
 //需要version和group
-group = "io.github.mahongyin.Monitor"
+group = groupName //"io.github.mahongyin.Monitor"
 version = VERSION_NAME
+
 //强制要求 pluginId 和 groupId 相同。...
-//TODO 发布到maven把下面注掉、发布gradle把下面解注
-gradlePlugin {
-    website = 'https://github.com/mahongyin/Monitor'
-    vcsUrl = 'https://github.com/mahongyin/Monitor'
-    plugins {
-        monitor {// "monitor"是一个内部标识符，可以自定义//指定插件 ID 和入口
-            id = "io.github.mahongyin.Monitor.monitor-plugin"// 此处定义的才是真正的插件ID
-            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
-            displayName = "MonitorPlugin"
-            description = "Gradle plugin to Monitor Net!"
-            tags.set(['android', 'monitor', 'okhttp', 'mahongyin'])
-        }
-        //... 还可以再加
-    }
-}
+// 发布到maven时把下面注掉、发布gradle门户把下面解注
 //gradlePlugin {
-//    website.set("https://github.com/mahongyin/Monitor")
-//    vcsUrl.set("https://github.com/mahongyin/Monitor")
+//    website = 'https://github.com/mahongyin/Monitor'
+//    vcsUrl = 'https://github.com/mahongyin/Monitor'
 //    plugins {
-//        create("monitor") { // "monitor"是一个内部标识符，可以自定义
+//        monitor {// "monitor"是一个内部标识符，可以自定义//指定插件 ID 和入口
 //            id = "io.github.mahongyin.Monitor.monitor-plugin"// 此处定义的才是真正的插件ID
 //            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
 //            displayName = "MonitorPlugin"
 //            description = "Gradle plugin to Monitor Net!"
-//            tags.set(listOf("android", "monitor", "okhttp", "mahongyin"))
+//            tags.set(['android', 'monitor', 'okhttp', 'mahongyin'])
 //        }
-//          ... 还可以再加
-//        //register("xxxx") {}
+//        //... 还可以再加
 //    }
 //}
+
+// TODO 发布到maven时把下面注掉、发布gradle门户把下面解注
+gradlePlugin {
+    website.set("https://${gitRepo}/Monitor")
+    vcsUrl.set("https://${gitRepo}/Monitor")
+    plugins {
+        create("monitor") { // "monitor"是一个内部标识符，可以自定义
+            id = "${groupName}.${moduleName}"// 此处定义的才是真正的插件ID
+            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
+            displayName = "MonitorPlugin"
+            description = "A plugin for monitoring Android OkHttp"
+            tags.set(["android", "monitor", "okhttp", "mahongyin"])//listOf()
+        }
+        //... 还可以再加
+        //register("xxxx") {}
+    }
+}
+
 // 注意 任务中publishPlugin 是发布到gradle门户 publishPluginMavenPublicationToMavenRepository
 if (VERSION_NAME.contains("-LOCAL")) {
     //gradle publishMavenPublicationToMavenRepository
@@ -88,8 +102,8 @@ if (VERSION_NAME.contains("-LOCAL")) {
         publications { PublicationContainer publication ->
             maven(MavenPublication) {
                 version VERSION_NAME
-                artifactId 'monitor-plugin'
-                groupId 'io.github.mahongyin.'+rootProject.name
+                artifactId moduleName
+                groupId groupName
                 from components.java
 //            from components.release
             }
@@ -113,15 +127,15 @@ if (VERSION_NAME.contains("-LOCAL")) {
     mavenPublishing {
         // 配置坐标,参数一要和命名空间一致，参二为模块名(GroupId),参三为版本号 "1.0.0"
         coordinates(
-                "io.github.mahongyin.Monitor",
-                "monitor-plugin",
+                groupName,
+                moduleName,
                 VERSION_NAME)
 
         pom {
             name = "Monitor"
             description = "An Http inspector for OkHttp & Retrofit"
             inceptionYear = "2025"
-            url = "https://github.com/mahongyin/Monitor"
+            url = "https://${gitRepo}/Monitor"
             licenses {
                 license {
                     name = "The Apache License, Version 2.0"
@@ -136,13 +150,13 @@ if (VERSION_NAME.contains("-LOCAL")) {
                 developer {
                     id = "mahongyin"
                     name = "mahongyin"
-                    url = "https://github.com/mahongyin"
+                    url = "https://${gitRepo}"
                 }
             }
             scm {
-                url = "https://github.com/mahongyin/Monitor"
-                connection = "scm:git:git://github.com/mahongyin/Monitor.git"
-                developerConnection = "scm:git:ssh://git@github.com/mahongyin/Monitor.git"
+                url = "https://${gitRepo}/Monitor"
+                connection = "scm:git:git://${gitRepo}/Monitor.git"
+                developerConnection = "scm:git:ssh://git@${gitRepo}/Monitor.git"
             }
         }
     }

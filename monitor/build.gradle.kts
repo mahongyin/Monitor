@@ -58,7 +58,7 @@ dependencies {
     implementation(libs.androidx.paging.compose)
     implementation(libs.google.gson)
     compileOnly(libs.squareup.okHttp)
-    compileOnly("com.tencent.tbs:tbssdk:44286")
+    compileOnly("com.tencent.tbs:tbssdk:44286")//44382
 }
 val VERSION_NAME = libs.versions.monitor.publishing.get()
 if (VERSION_NAME.contains("-LOCAL")) {

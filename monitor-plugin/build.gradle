@@ -8,7 +8,7 @@ plugins {
     //配置这个，gradlePlugin{}用否则找不到 org.gradle.api.Plugin 等
 //    id("groovy-gradle-plugin")
     // gradle门户
-    id 'com.gradle.plugin-publish' version '2.0.0'
+    id 'com.gradle.plugin-publish' version '2.1.0'
 }
 
 //java {
@@ -33,13 +33,14 @@ dependencies {
 //    implementation gradleApi()
 //    implementation localGroovy()
 
+    //AGP9 要Java21
+    compileOnly 'com.android.tools.build:gradle:9.0.0'
     //AGP8 要Java17
-    compileOnly 'com.android.tools.build:gradle:8.3.0'
-//    compileOnly 'com.android.tools.build:gradle-api:8.3.0'
+    //compileOnly 'com.android.tools.build:gradle-api:8.3.0'
     //ASM
-    implementation 'org.ow2.asm:asm:9.6'
-    implementation 'org.ow2.asm:asm-util:9.6'
-    implementation 'org.ow2.asm:asm-commons:9.6'
+    implementation 'org.ow2.asm:asm:9.8'
+    implementation 'org.ow2.asm:asm-util:9.8'
+    implementation 'org.ow2.asm:asm-commons:9.8'
 
     //常用io操作
 //    implementation "commons-io:commons-io:2.13.0"

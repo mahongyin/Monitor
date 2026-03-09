@@ -8,7 +8,8 @@ buildscript {
             url = uri("https://central.sonatype.com/repository/maven-snapshots/")
         }
     }
-    dependencies { //classpath("com.vanniktech:gradle-maven-publish-plugin:0.34.0")
+    dependencies {
+        //classpath("com.vanniktech:gradle-maven-publish-plugin:0.36.0")
         classpath("io.github.mahongyin.Monitor:monitor-plugin:2.0.0-LOCAL")//
     }
 }

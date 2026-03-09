@@ -21,6 +21,7 @@ squareup-okHttp = "5.3.2"
 squareup-retrofit = "3.0.0"
 
 monitor = "1.8.6"
+monitor-publishing = "2.1.8.6" # -LOCAL -SNAPSHOT
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-plugin" }
@@ -29,7 +30,10 @@ android-library = { id = "com.android.library", version.ref = "android-plugin" }
 androidx-room = { id = "androidx.room", version.ref = "androidx-room" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "google-ksp-plugin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin-plugin" }
+# classpath 'com.vanniktech:gradle-maven-publish-plugin:0.36.0',  plugin: 'com.vanniktech.maven.publish'
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish-plugin" }
+# classpath 'io.github.mahongyin.Monitor:monitor-plugin:2.0.0'
+monitor-plugin = { id = "io.github.mahongyin.Monitor.monitor-plugin", version.ref = "monitor-publishing" }
 
 [libraries]
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }

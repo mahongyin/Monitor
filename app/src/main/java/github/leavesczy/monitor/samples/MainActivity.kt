@@ -1,13 +1,28 @@
 package github.leavesczy.monitor.samples
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
+import android.os.Message
+import android.util.Log
+import android.view.ViewGroup
+import android.webkit.SslErrorHandler
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,11 +31,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.NotificationManagerCompat
-import github.leavesczy.monitor.MonitorInterceptor
+import androidx.core.net.toUri
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
@@ -36,13 +53,13 @@ import retrofit2.converter.gson.GsonConverterFactory
  */
 @ExperimentalMaterial3Api
 class MainActivity : AppCompatActivity() {
-
+    private var webview: WebView? = null
     private val okHttpClient by lazy {
         OkHttpClient.Builder().apply {
             addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
             })
-            addNetworkInterceptor(interceptor = MonitorInterceptor())
+            //addNetworkInterceptor(interceptor = MonitorInterceptor())
         }.build()
     }
 
@@ -62,6 +79,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webview?.canGoBack() == true) {
+                    webview?.goBack()
+                    return
+                }
+                finish()
+            }
+        })
         setContent {
             MonitorSampleTheme {
                 Scaffold(
@@ -84,19 +110,22 @@ class MainActivity : AppCompatActivity() {
                             .fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 40.dp),
-                            onClick = {
-                                networkRequest()
-                                showToast(msg = "已发起请求，请查看消息通知栏")
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 40.dp),
+                                onClick = {
+                                    networkRequest()
+                                    showToast(msg = "已发起请求，请查看消息通知栏")
+                                }
+                            ) {
+                                Text(
+                                    modifier = Modifier,
+                                    text = "Network Request"
+                                )
                             }
-                        ) {
-                            Text(
-                                modifier = Modifier,
-                                text = "Network Request"
-                            )
+                            SimpleWebView()
                         }
                     }
                 }
@@ -146,4 +175,118 @@ class MainActivity : AppCompatActivity() {
         apiService.xml().enqueue(callback)
     }
 
+    @Composable
+    fun SimpleWebView() {
+        AndroidView(factory = { context ->
+            webview(context).apply {
+                // 设置布局参数
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT)
+                            // 加载网页
+                loadUrl("https://juejin.cn/")
+            }
+        }, update = { webView ->
+            // 可以在这里处理更新逻辑，例如重新加载页面等
+            webView.reload()
+        })
+    }
+
+    private fun webview(context: Context): WebView {
+        val webview = WebView(context)
+        webview?.clearHistory()
+        webview?.clearCache(true)
+        webview?.clearFormData()
+        webview?.clearMatches()
+        webview?.settings?.apply {
+            javaScriptEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            useWideViewPort = true
+            javaScriptCanOpenWindowsAutomatically = true
+            loadWithOverviewMode = true
+            displayZoomControls = false
+            setSupportMultipleWindows(true)
+            loadsImagesAutomatically = true
+            blockNetworkImage = false
+            setGeolocationEnabled(true)
+            databaseEnabled = true
+            setSupportZoom(false)
+            domStorageEnabled = true
+            cacheMode = WebSettings.LOAD_NO_CACHE
+        }
+        webview?.webChromeClient = object : WebChromeClient() {
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean {
+                // 1. 创建临时WebView用于捕获URL
+                val result = view?.hitTestResult
+                val url = result?.extra ?: "" // 获取点击链接的URL
+                Log.d("shouldLoading", "_blank: $url")
+                if (url.startsWith("http", true)) {
+                    view?.loadUrl(url)
+                } else {
+                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                    if (packageManager.resolveActivity(
+                            intent,
+                            PackageManager.MATCH_DEFAULT_ONLY
+                        ) != null
+                    ) {
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this@MainActivity, "不支持", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                return true
+            }
+        }
+        webview?.webViewClient = object : WebViewClient() {
+
+            @SuppressLint("WebViewClientOnReceivedSslError")
+            override fun onReceivedSslError(
+                view: WebView?,
+                handler: SslErrorHandler?,
+                error: SslError?
+            ) {
+                handler?.proceed()//忽略证书错误
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                Log.d("shouldLoading", "request: $url")
+                if (url?.startsWith("http", true) == true) {
+                    view?.loadUrl(url)
+                } else {
+                    val intent = Intent(Intent.ACTION_VIEW, url?.toUri())
+                    if (packageManager.resolveActivity(
+                            intent,
+                            PackageManager.MATCH_DEFAULT_ONLY
+                        ) != null
+                    ) {
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this@MainActivity, "不支持", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                return true
+            }
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                return this.shouldOverrideUrlLoading(view, request?.url?.toString())
+            }
+        }
+        this.webview = webview
+        return webview
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        webview?.destroy()
+    }
 }

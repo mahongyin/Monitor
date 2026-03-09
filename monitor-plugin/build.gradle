@@ -1,0 +1,163 @@
+plugins {
+    //id 'java'
+    id 'groovy'
+    id 'kotlin'
+//    id("java-gradle-plugin")
+    id 'com.vanniktech.maven.publish'
+    id 'maven-publish'
+    //配置这个，gradlePlugin{}用否则找不到 org.gradle.api.Plugin 等
+//    id("groovy-gradle-plugin")
+    // gradle门户
+    id 'com.gradle.plugin-publish' version '2.0.0'
+}
+
+//java {
+//    sourceCompatibility = JavaVersion.VERSION_17
+//    targetCompatibility = JavaVersion.VERSION_17
+//}
+//kotlin {//kotlin 在 1.5.30 开始支持了这个
+//    jvmToolchain(17)
+//}
+//sourceSets { SourceSetContainer sourceSets ->
+//    sourceSets.main.java.srcDirs('src/main/java', 'src/main/groovy', 'src/main/kotlin')
+//}
+// 确保源码被正确编译和打包
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/kotlin']
+        }
+    }
+}
+dependencies {
+//    implementation gradleApi()
+//    implementation localGroovy()
+
+    //AGP8 要Java17
+    compileOnly 'com.android.tools.build:gradle:8.3.0'
+//    compileOnly 'com.android.tools.build:gradle-api:8.3.0'
+    //ASM
+    implementation 'org.ow2.asm:asm:9.6'
+    implementation 'org.ow2.asm:asm-util:9.6'
+    implementation 'org.ow2.asm:asm-commons:9.6'
+
+    //常用io操作
+//    implementation "commons-io:commons-io:2.13.0"
+
+}
+//  获取项目名
+def projectName = rootProject.name  //分享git是取的项目名
+def projectDirName = rootProject.projectDir.name//def projectName =rootProject.rootDir.name//项目文件夹名
+//  获取当前模块名
+def moduleName = project.name
+def moduleDirName = projectDir.name
+
+def gitRepo = "github.com/mahongyin"
+def groupName = "io.github.mahongyin.$projectName" //自行分辨 用项目名还是目录名
+
+def VERSION_NAME = libs.versions.monitor.publishing.get()
+
+//需要version和group
+group = groupName //"io.github.mahongyin.Monitor"
+version = VERSION_NAME
+
+//强制要求 pluginId 和 groupId 相同。...
+// 发布到maven时把下面注掉、发布gradle门户把下面解注
+//gradlePlugin {
+//    website = 'https://github.com/mahongyin/Monitor'
+//    vcsUrl = 'https://github.com/mahongyin/Monitor'
+//    plugins {
+//        monitor {// "monitor"是一个内部标识符，可以自定义//指定插件 ID 和入口
+//            id = "io.github.mahongyin.Monitor.monitor-plugin"// 此处定义的才是真正的插件ID
+//            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
+//            displayName = "MonitorPlugin"
+//            description = "Gradle plugin to Monitor Net!"
+//            tags.set(['android', 'monitor', 'okhttp', 'mahongyin'])
+//        }
+//        //... 还可以再加
+//    }
+//}
+
+// TODO 发布到maven时把下面注掉、发布gradle门户把下面解注
+gradlePlugin {
+    website.set("https://${gitRepo}/Monitor")
+    vcsUrl.set("https://${gitRepo}/Monitor")
+    plugins {
+        create("monitor") { // "monitor"是一个内部标识符，可以自定义
+            id = "${groupName}.${moduleName}"// 此处定义的才是真正的插件ID
+            implementationClass = "github.mahongyin.monitor.plugin.MonitorPlugin"
+            displayName = "MonitorPlugin"
+            description = "A plugin for monitoring Android OkHttp"
+            tags.set(["android", "monitor", "okhttp", "mahongyin"])//listOf()
+        }
+        //... 还可以再加
+        //register("xxxx") {}
+    }
+}
+
+// 注意 任务中publishPlugin 是发布到gradle门户 publishPluginMavenPublicationToMavenRepository
+if (VERSION_NAME.contains("-LOCAL")) {
+    //gradle publishMavenPublicationToMavenRepository
+    publishing {
+        publications { PublicationContainer publication ->
+            maven(MavenPublication) {
+                version VERSION_NAME
+                artifactId moduleName
+                groupId groupName
+                from components.java
+//            from components.release
+            }
+        }
+        repositories { RepositoryHandler handler ->
+            handler.maven { MavenArtifactRepository mavenArtifactRepository -> //正式仓库
+                //上传到项目本地仓库
+                url '..\\localmaven' //MAVEN_URL //
+                if (url.toString().startsWith("http")) {
+                    allowInsecureProtocol = true
+                    credentials {
+                        username = MAVEN_USER
+                        password = MAVEN_PASSWORD
+                    }
+                }
+            }
+        }
+    }
+} else {
+// maven方式 gradle publishToMavenCentral
+    mavenPublishing {
+        // 配置坐标,参数一要和命名空间一致，参二为模块名(GroupId),参三为版本号 "1.0.0"
+        coordinates(
+                groupName,
+                moduleName,
+                VERSION_NAME)
+
+        pom {
+            name = "Monitor"
+            description = "An Http inspector for OkHttp & Retrofit"
+            inceptionYear = "2025"
+            url = "https://${gitRepo}/Monitor"
+            licenses {
+                license {
+                    name = "The Apache License, Version 2.0"
+                    url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    distribution = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+//                name = "LGPL-3.0 license"
+//                url = "https://www.gnu.org/licenses/lgpl-3.0.html"
+//                distribution = "https://www.gnu.org/licenses/lgpl-3.0.html"
+                }
+            }
+            developers {
+                developer {
+                    id = "mahongyin"
+                    name = "mahongyin"
+                    url = "https://${gitRepo}"
+                }
+            }
+            scm {
+                url = "https://${gitRepo}/Monitor"
+                connection = "scm:git:git://${gitRepo}/Monitor.git"
+                developerConnection = "scm:git:ssh://git@${gitRepo}/Monitor.git"
+            }
+        }
+    }
+}
